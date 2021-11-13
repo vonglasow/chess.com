@@ -25,11 +25,16 @@ def user_stats(url):
 	r = requests.get(url)
 	return r.json()
 
+def arena_players(url):
+	r = requests.get(url)
+	return r.json()['players']
+
 # Construct an argument parser
 all_args = argparse.ArgumentParser()
 
 # Add arguments to the parser
-all_args.add_argument("username")
+all_args.add_argument("-u", "--username", required=False, help="chess.com username")
+all_args.add_argument("-t", "--tournament", required=False, help="tournament ID (ex: poulet-1484723)")
 all_args.add_argument("-a", "--archives", action='store_true', default=False, required=False, help="game archives")
 all_args.add_argument("-s", "--stats", action='store_true', default=False, required=False, help="user stats")
 args = vars(all_args.parse_args())
@@ -38,6 +43,7 @@ args = vars(all_args.parse_args())
 #https://www.chess.com/news/view/published-data-api#pubapi-endpoint-games-archive-list
 ARCHIVE_ENDPOINT='https://api.chess.com/pub/player/{}/games/archives'.format(args['username'])
 STATS_ENDPOINT='https://api.chess.com/pub/player/{}/stats'.format(args['username'])
+ARENA_ENDPOINT='https://api.chess.com/pub/tournament/{}/1'.format(args['tournament'])
 
 def archives():
 	for url in archived_games(ARCHIVE_ENDPOINT):
@@ -47,9 +53,17 @@ def archives():
 def stats():
 	print(user_stats(STATS_ENDPOINT))
 
+def arena_ranking():
+	return sorted(arena_players(ARENA_ENDPOINT), key=lambda x : x['points'], reverse=True)
+
+def arena_top_3():
+	print(arena_ranking()[0:3])
+
 if args['archives']:
 	archives()
 elif args['stats']:
 	stats()
+elif args['tournament']:
+	arena_top_3()
 else:
 	all_args.print_help()
