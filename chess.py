@@ -2,6 +2,8 @@ import json
 import pprint
 import requests
 import argparse
+import os
+import random
 
 '''
 HTTP Responses from Chess.com
@@ -37,6 +39,7 @@ all_args.add_argument("-u", "--username", required=False, help="chess.com userna
 all_args.add_argument("-t", "--tournament", required=False, help="tournament ID (ex: poulet-1484723)")
 all_args.add_argument("-a", "--archives", action='store_true', default=False, required=False, help="game archives")
 all_args.add_argument("-s", "--stats", action='store_true', default=False, required=False, help="user stats")
+all_args.add_argument("-r", "--random", action='store_true', default=False, required=False, help="Choose a random user among tournament list")
 args = vars(all_args.parse_args())
 
 #ARCHIVE ENDPOINT USED FOR API REQUESTS
@@ -46,9 +49,20 @@ STATS_ENDPOINT='https://api.chess.com/pub/player/{}/stats'.format(args['username
 ARENA_ENDPOINT='https://api.chess.com/pub/tournament/{}/1'.format(args['tournament'])
 
 def archives():
+	login_file = args['username'] + ".pgn"
+	if os.path.exists(login_file):
+		os.remove(login_file)
+	l = open(login_file, "x")
 	for url in archived_games(ARCHIVE_ENDPOINT):
+		chess_file = "ChessCom_" + args['username'] + "_" + url[-7:].replace("/", "") + ".pgn"
+		if os.path.exists(chess_file):
+			os.remove(chess_file)
+		f = open(chess_file, "x")
 		for games in monthly_games(url):
-			print(games['pgn'])
+			f.write(games['pgn'])
+			l.write(games['pgn'])
+		f.close()
+	l.close()
 
 def stats():
 	print(user_stats(STATS_ENDPOINT))
@@ -59,11 +73,16 @@ def arena_ranking():
 def arena_top_3():
 	print(arena_ranking()[0:3])
 
+def arena_random_winner():
+	print(random.choice(arena_ranking())['username'])
+
 if args['archives']:
 	archives()
 elif args['stats']:
 	stats()
-elif args['tournament']:
+elif (args['tournament'] and not args['random']):
 	arena_top_3()
+elif args['random']:
+	arena_random_winner()
 else:
 	all_args.print_help()
